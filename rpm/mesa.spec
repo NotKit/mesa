@@ -5,17 +5,17 @@
 
 %ifarch %{arm} aarch64
 #global with_freedreno 1
-%global with_lima      1
+#global with_lima      1
 %global with_panfrost  1
 #global with_tegra     0
-%global with_vc4       1
+#global with_vc4       1
 %endif
 
 
 Name:       mesa
 
 Summary:    Mesa graphics libraries
-Version:    24.2.0
+Version:    23.0.0
 Release:    0
 Group:      System/Libraries
 License:    MIT
@@ -174,13 +174,15 @@ Mesa-based DRI driver development files.
 
 %prep
 %setup -q -n %{name}-%{version}/mesa
+# Compilation fix: https://gitlab.freedesktop.org/mesa/mesa/-/issues/6505
+sed -i -e "s/'instcombine'/'instcombine', 'passes'/" meson.build
 
 %build
 %meson -Dosmesa=false \
     -Ddri3=enabled \
     -Dllvm=enabled \
     -Dshared-llvm=disabled \
-    -Dgallium-drivers=softpipe,llvmpipe,virgl%{?with_freedreno:,freedreno}%{?with_etnaviv:,etnaviv}%{?with_tegra:,tegra}%{?with_vc4:,vc4}%{?with_lima:,lima}%{?with_panfrost:,panfrost}%{?with_intel:,i915,crocus,iris}\
+    -Dgallium-drivers=swrast%{?with_freedreno:,freedreno}%{?with_etnaviv:,etnaviv}%{?with_tegra:,tegra}%{?with_vc4:,vc4}%{?with_lima:,lima}%{?with_panfrost:,panfrost}%{?with_intel:,i915,crocus,iris}\
     -Dvulkan-drivers= \
     -Dplatforms=wayland \
     -Dglx=disabled \
@@ -191,12 +193,10 @@ Mesa-based DRI driver development files.
     -Dmicrosoft-clc=disabled \
     -Dxlib-lease=disabled \
     -Dgallium-vdpau=disabled \
-    -Dandroid-libbacktrace=disabled \
     -Dvalgrind=disabled \
     -Dlibunwind=disabled \
     -Dlmsensors=disabled \
     -Dselinux=false \
-    -Dintel-rt=false \
     -Dglvnd=false \
     -Dcpp_rtti=false
 
@@ -316,6 +316,4 @@ rm -rf %{buildroot}/%{_libdir}/dri/kms_swrast_dri.so
 %defattr(-,root,root,-)
 %dir %{_datadir}/drirc.d
 %{_datadir}/drirc.d/00-mesa-defaults.conf
-%{_libdir}/dri/virtio_gpu_drv_video.so
-%{_libdir}/dri/libgallium_drv_video.so
-%{_libdir}/libgallium-*.so
+%{_libdir}/dri/*.so
